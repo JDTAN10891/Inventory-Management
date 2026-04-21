@@ -537,10 +537,8 @@ function filterItems() {
 }
 
 function updateStats() {
-    // Stats are updated in renderDashboard
 }
 
-// Toast
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const icon = document.getElementById('toast-icon');
@@ -556,13 +554,11 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadDemoData();
     switchTab('dashboard');
 });
 
-// Close modals on outside click
 document.getElementById('item-modal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeModal();
 });
