@@ -464,7 +464,9 @@ function createItemCard(item) {
 }
 
 function renderTires() {
-    const tires = inventory.filter(i => i.type === 'tire').sort((a, b) => a.quantity - b.quantity);
+    const tires = inventory
+        .filter(i => i.type === 'tire')
+        .sort((a, b) => a.name.localeCompare(b.name));
     const container = document.getElementById('tires-list');
 
     if (tires.length === 0) {
@@ -476,7 +478,9 @@ function renderTires() {
 }
 
 function renderBatteries() {
-    const batteries = inventory.filter(i => i.type === 'battery').sort((a, b) => a.quantity - b.quantity);
+    const batteries = inventory
+        .filter(i => i.type === 'battery')
+        .sort((a, b) => a.name.localeCompare(b.name));
     const container = document.getElementById('batteries-list');
 
     if (batteries.length === 0) {
@@ -507,8 +511,8 @@ function createListItem(item) {
                 <div class="text-sm text-slate-500 mb-1">${item.brand} • ${item.sku}</div>
                 <div class="text-sm text-slate-600">${detail}</div>
             </div>
-            <div class="text-right flex-shrink-0">
-                <div class="text-xl font-bold text-slate-900">${item.quantity}</div>
+            <div class="text-right flex-shrink-0 w-16">
+                <div class="text-xl font-bold text-slate-900 tabular-nums">${item.quantity}</div>
                 <div class="text-xs text-slate-500">units</div>
             </div>
             <div class="text-right flex-shrink-0 hidden sm:block w-24">
