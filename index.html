@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="./inventory.css">
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen">
@@ -91,10 +92,21 @@
                 <h2 id="page-title" class="text-3xl font-bold text-slate-900">Dashboard</h2>
                 <p class="text-slate-500 mt-1">Manage your tire and battery inventory</p>
             </div>
-            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2 shadow-lg shadow-blue-200 transition-all transform hover:scale-105">
-                <i class="fas fa-plus"></i>
-                Add Item
-            </button>
+            <!-- Import and export backup buttons -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <button onclick="openImportDialog()" class="bg-amber-600 hover:bg-amber-700 text-white px-5 py-3 rounded-lg font-medium flex items-center justify-center gap-2 shadow-lg shadow-amber-200 transition-all transform hover:scale-105">
+                    <i class="fas fa-file-import"></i>
+                    Import Backup
+                </button>
+                <button onclick="exportInventoryToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-lg font-medium flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 transition-all transform hover:scale-105">
+                    <i class="fas fa-file-export"></i>
+                    Export Backup
+                </button>
+                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all transform hover:scale-105">
+                    <i class="fas fa-plus"></i>
+                    Add Item
+                </button>
+            </div>
         </div>
 
         <!-- Dashboard View -->
@@ -444,6 +456,7 @@
             <span id="toast-message">Operation successful</span>
         </div>
     </div>
+    <input type="file" id="import-file" accept=".xlsx,.xls" class="hidden" onchange="importInventoryFromExcel(event)">
     <script src="./inventory.js"></script>
 </body>
 </html>

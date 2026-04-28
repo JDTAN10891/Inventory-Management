@@ -1,5 +1,15 @@
 // State Management
-let inventory = JSON.parse(localStorage.getItem('autoInventory')) || [];
+function readStoredInventory() {
+    try {
+        const raw = localStorage.getItem('autoInventory');
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+let inventory = readStoredInventory();
 let currentTab = 'dashboard';
 let itemToDelete = null;
 let editingItemId = null;
@@ -8,6 +18,10 @@ let editingItemId = null;
 function saveToStorage() {
     localStorage.setItem('autoInventory', JSON.stringify(inventory));
     updateStats();
+    renderAll();
+}
+
+function loadDemoData() {
     renderAll();
 }
 
@@ -447,6 +461,135 @@ function createListItem(item) {
 
 function filterItems() {
     renderInventory();
+}
+
+function exportInventoryToExcel() {
+    if (!window.XLSX) {
+        showToast('Excel export is not available right now', 'error');
+        return;
+    }
+
+    const exportRows = inventory.map(item => ({
+        ID: item.id || '',
+        Type: item.type || '',
+        Name: item.name || '',
+        SKU: item.sku || '',
+        Brand: item.brand || '',
+        Quantity: Number(item.quantity) || 0,
+        'Min Stock': Number(item.minStock) || 0,
+        Price: Number(item.price) || 0,
+        Notes: item.notes || '',
+        'Created At': item.createdAt || '',
+        'Updated At': item.updatedAt || '',
+        'Width (mm)': item.width || '',
+        'Aspect Ratio': item.ratio || '',
+        'Rim Size': item.rim || '',
+        Season: item.season || '',
+        'Vehicle Type': item.vehicle || '',
+        'Group Size': item.groupSize || '',
+        CCA: item.cca || '',
+        Voltage: item.voltage || '',
+        Technology: item.technology || ''
+    }));
+
+    const worksheet = window.XLSX.utils.json_to_sheet(exportRows);
+    const workbook = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(workbook, worksheet, 'Inventory');
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    window.XLSX.writeFile(workbook, `autostock-backup-${stamp}.xlsx`);
+    showToast('Inventory exported to Excel backup', 'success');
+}
+
+function openImportDialog() {
+    const fileInput = document.getElementById('import-file');
+    if (fileInput) {
+        fileInput.value = '';
+        fileInput.click();
+    }
+}
+
+function normalizeImportedItem(row, index) {
+    const typeValue = String(row.Type || row.type || row['Item Type'] || '').trim().toLowerCase();
+    const type = typeValue.includes('battery') ? 'battery' : 'tire';
+    const quantity = Number(row.Quantity ?? row.quantity ?? row['Quantity in Stock'] ?? 0);
+    const minStock = Number(row['Min Stock'] ?? row.minStock ?? row['Min Stock Level'] ?? 0);
+    const price = Number(row.Price ?? row.price ?? row['Price per Unit'] ?? 0);
+
+    const item = {
+        id: String(row.ID || row.id || Date.now() + index),
+        type,
+        name: String(row.Name || row.name || '').trim(),
+        sku: String(row.SKU || row.sku || '').trim(),
+        brand: String(row.Brand || row.brand || '').trim(),
+        quantity: Number.isFinite(quantity) ? quantity : 0,
+        minStock: Number.isFinite(minStock) && minStock > 0 ? minStock : 5,
+        price: Number.isFinite(price) ? price : 0,
+        notes: String(row.Notes || row.notes || '').trim(),
+        createdAt: String(row['Created At'] || row.createdAt || new Date().toISOString()),
+        updatedAt: String(row['Updated At'] || row.updatedAt || new Date().toISOString())
+    };
+
+    if (!item.name || !item.sku || !item.brand) {
+        return null;
+    }
+
+    if (type === 'tire') {
+        item.width = String(row['Width (mm)'] || row.width || '').trim();
+        item.ratio = String(row['Aspect Ratio'] || row.ratio || '').trim();
+        item.rim = String(row['Rim Size'] || row.rim || '').trim();
+        item.season = String(row.Season || row.season || 'All-Season').trim() || 'All-Season';
+        item.vehicle = String(row['Vehicle Type'] || row.vehicle || 'Passenger').trim() || 'Passenger';
+    } else {
+        item.groupSize = String(row['Group Size'] || row.groupSize || '').trim();
+        const cca = Number(row.CCA ?? row.cca ?? 0);
+        item.cca = Number.isFinite(cca) ? cca : 0;
+        item.voltage = String(row.Voltage || row.voltage || '12V').trim() || '12V';
+        item.technology = String(row.Technology || row.technology || 'Lead-Acid').trim() || 'Lead-Acid';
+    }
+
+    return item;
+}
+
+async function importInventoryFromExcel(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    if (!window.XLSX) {
+        showToast('Excel import is not available right now', 'error');
+        return;
+    }
+
+    if (!confirm('Importing a backup will replace your current inventory. Continue?')) {
+        event.target.value = '';
+        return;
+    }
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const workbook = window.XLSX.read(buffer, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+
+        if (!sheetName) {
+            throw new Error('No worksheet found in file');
+        }
+
+        const worksheet = workbook.Sheets[sheetName];
+        const rows = window.XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+        const imported = rows.map(normalizeImportedItem).filter(Boolean);
+
+        if (imported.length === 0) {
+            throw new Error('No valid inventory rows were found');
+        }
+
+        inventory = imported;
+        saveToStorage();
+        showToast(`Imported ${imported.length} items from Excel`, 'success');
+    } catch (error) {
+        showToast(`Import failed: ${error.message}`, 'error');
+    } finally {
+        event.target.value = '';
+    }
 }
 
 function updateStats() {
